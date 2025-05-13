@@ -1,8 +1,9 @@
 use std::string::String;
 use std::ops::{Add, Sub, Mul, Div};
 use std::fmt;
+use std::iter::Sum;
 
-const PRECISION: i32 = 8;
+const PRECISION: u8 = 10;
 const PRECISION_MASK: i32 = (1 << PRECISION) - 1;
 
 fn get_largest_decimal(mut number: i32) -> i32 {//shifts the number to the leftmost available position in the decimal system
@@ -14,14 +15,14 @@ fn get_largest_decimal(mut number: i32) -> i32 {//shifts the number to the leftm
     number
 }
 
-struct Number{
+struct num32{
     fixed: i32 //fixed point value
 }
 
-impl Number{
+impl num32{
     fn from_float (decimal: f32) -> Self {
         let fixed_value = (decimal * (1 << PRECISION) as f32).round() as i32;
-        Number{fixed: fixed_value}
+        num32{fixed: fixed_value}
     }
     
     fn from_decimal (number: i32, digits_after_decimal: u32) -> Self {
@@ -30,7 +31,7 @@ impl Number{
         let decimal_multiplier: i32 = (10 as i32).pow(digits_after_decimal);
         let whole: i32 = number / decimal_multiplier << PRECISION;
         let fraction: i32 = number % decimal_multiplier * PRECISION_MASK / decimal_multiplier;
-        Number{fixed: whole + fraction}
+        num32{fixed: whole + fraction}
     }
 
     fn split(&self) -> (i32, i32){//return whole and fractional numbers
@@ -75,28 +76,28 @@ impl Number{
     }
 }
 
-impl Add for Number {
+impl Add for num32 {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         Self {fixed: self.fixed + other.fixed}
     }
 }
 
-impl Mul for Number {
+impl Mul for num32 {
     type Output = Self;
     fn mul(self, other: Self) -> Self {
         Self {fixed: (self.fixed * other.fixed) >> PRECISION}
     }
 }
 
-impl Sub for Number {
+impl Sub for num32 {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
         Self {fixed: self.fixed - other.fixed}
     }
 }
 
-impl Div for Number {
+impl Div for num32 {
     type Output = Self;
     fn div(self, other: Self) -> Self {
         let whole = (self.fixed / other.fixed) << PRECISION;
@@ -105,16 +106,30 @@ impl Div for Number {
     }
 }
 
-impl fmt::Display for Number {
+impl fmt::Display for num32 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.to_string())
     }
 }
 
-impl Copy for Number { }
+impl Copy for num32 { }
 
-impl Clone for Number {
-    fn clone(&self) -> Number {
+impl Clone for num32 {
+    fn clone(&self) -> num32 {
         *self
+    }
+}
+
+impl Sum for num32 {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(num32 { fixed: 0 }, |a, b| a + b)
+    }
+}
+
+impl<'a> Sum<&'a num32> for num32 {
+    fn sum<I: Iterator<Item = &'a num32>>(iter: I) -> Self {
+        iter.fold(num32 { fixed: 0 }, |a, b| num32 {
+            fixed: a.fixed + b.fixed,
+        })
     }
 }

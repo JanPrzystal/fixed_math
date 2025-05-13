@@ -1,4 +1,6 @@
 mod mixed_number;
+use std::time::{Duration, Instant};
+use rand::Rng;
 
 include!("mixed_number.rs");
 
@@ -14,9 +16,9 @@ pub fn get_input(prompt: &str) -> String{
 
 fn demo() {
     //create a few numbers, perform math operations and print results
-    let fixed1 = Number::from_float(3.1);
-    let fixed2 = Number::from_float(-13.641);
-    let fixed3 = Number::from_decimal(118187, 3);
+    let fixed1 = num32::from_float(3.1);
+    let fixed2 = num32::from_float(-13.641);
+    let fixed3 = num32::from_decimal(118187, 3);
 
     let fixed12 = fixed1 * fixed2;
     let fixed32 = fixed3 + fixed2;
@@ -42,7 +44,7 @@ fn poll_number(){
 
         println!("your number is {}", fl);
 
-        let decimal = Number::from_float(fl);
+        let decimal = num32::from_float(fl);
 
         println!("as fixed point {}", decimal.fixed);
 
@@ -57,9 +59,41 @@ fn poll_number(){
     }
 }
 
+fn measure_fixed(float_array: &Vec<f32>) {
+    let fixed_array: Vec<num32> = float_array.iter()
+        .map(|x| num32::from_float(*x))
+        .collect();
+
+    let now = Instant::now();
+
+    let total: num32 = fixed_array.iter().sum();
+
+    let elapsed = now.elapsed().as_micros();
+    println!("fixed sum result {}, in {}us", total.to_float(), elapsed);
+}
+
+fn measure_float(float_array: &Vec<f32>) {
+
+    let now = Instant::now();
+
+    let total: f32 = float_array.iter().sum();
+
+    let elapsed = now.elapsed().as_micros();
+    println!("float sum result {}, in {}us", total, elapsed);
+}
+
 fn main() {
     demo();
 
-    poll_number();
+    let mut rng = rand::thread_rng();
+
+    let float_array: Vec<f32> = (0..100000)
+        .map(|_| rng.gen_range(-10.0..=10.0))
+        .collect();
+
+    
+    measure_fixed(&float_array);
+    measure_float(&float_array);
+    // poll_number();
 }
 
